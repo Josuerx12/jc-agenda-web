@@ -41,6 +41,47 @@
 
         <q-separator spaced />
 
+        <q-item clickable v-ripple to="/dashboard" exact>
+          <q-item-section avatar>
+            <q-icon name="dashboard" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>Visão geral</q-item-label>
+          </q-item-section>
+        </q-item>
+
+        <q-item
+          v-if="canManageServices"
+          clickable
+          v-ripple
+          to="/dashboard/servicos"
+        >
+          <q-item-section avatar>
+            <q-icon name="local_offer" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>Serviços</q-item-label>
+            <q-item-label caption>Catálogo da empresa</q-item-label>
+          </q-item-section>
+        </q-item>
+
+        <q-item
+          v-if="canManageServices"
+          clickable
+          v-ripple
+          to="/dashboard/usuarios"
+        >
+          <q-item-section avatar>
+            <q-icon name="group" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>Usuários</q-item-label>
+            <q-item-label caption>Equipe e permissões</q-item-label>
+          </q-item-section>
+        </q-item>
+
+        <q-separator spaced />
+
         <q-item clickable v-ripple @click="logout">
           <q-item-section avatar>
             <q-icon name="logout" color="negative" />
@@ -51,7 +92,11 @@
     </q-drawer>
 
     <q-page-container>
-      <router-view />
+      <router-view v-slot="{ Component }">
+        <keep-alive include="ServicesPage,CompanyUsersPage">
+          <component :is="Component" />
+        </keep-alive>
+      </router-view>
     </q-page-container>
   </q-layout>
 </template>
@@ -67,6 +112,9 @@ const auth = useAuth();
 const router = useRouter();
 const { user } = storeToRefs(auth);
 const rightDrawerOpen = ref(false);
+const canManageServices = computed(
+  () => Boolean(user.value?.isAdmin) || Boolean(user.value?.isOwner)
+);
 const userInitials = computed(() => {
   if (!user.value) return "";
   return `${user.value.firstName[0] ?? ""}${user.value.lastName[0] ?? ""}`.toUpperCase();

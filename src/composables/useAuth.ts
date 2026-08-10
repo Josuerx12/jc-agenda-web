@@ -25,7 +25,7 @@ export interface AuthenticatedUser {
   phone: string;
   isActive: boolean;
   isAdmin: boolean;
-  isMaster: boolean;
+  isOwner: boolean;
   isBlocked: boolean;
 }
 

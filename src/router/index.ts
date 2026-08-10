@@ -34,6 +34,10 @@ export default defineRouter(({ store }) => {
       return { path: "/login", query: { redirect: to.fullPath } };
     }
 
+    if (to.meta.requiresManager && !user?.isAdmin && !user?.isOwner) {
+      return "/dashboard";
+    }
+
     if (to.meta.guestOnly && user) {
       return "/dashboard";
     }
