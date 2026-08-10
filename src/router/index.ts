@@ -1,10 +1,6 @@
 import { defineRouter } from "#q-app";
-import {
-  createMemoryHistory,
-  createRouter,
-  createWebHashHistory,
-  createWebHistory
-} from "vue-router";
+import { useAuth } from "@/composables/useAuth";
+import { createRouter, createWebHistory } from "vue-router";
 
 import routes from "./routes";
 
@@ -17,12 +13,8 @@ import routes from "./routes";
  * with the Router instance.
  */
 
-export default defineRouter((/* { store, ssrContext } */) => {
-  const createHistory = import.meta.env.QUASAR_SERVER
-    ? createMemoryHistory
-    : import.meta.env.QUASAR_VUE_ROUTER_MODE === "history"
-      ? createWebHistory
-      : createWebHashHistory;
+export default defineRouter(({ store }) => {
+  const createHistory = createWebHistory;
 
   const Router = createRouter({
     scrollBehavior: () => ({ left: 0, top: 0 }),
@@ -32,6 +24,21 @@ export default defineRouter((/* { store, ssrContext } */) => {
     // quasar.conf.js -> build -> vueRouterMode
     // quasar.conf.js -> build -> publicPath
     history: createHistory(import.meta.env.QUASAR_VUE_ROUTER_BASE)
+  });
+
+  Router.beforeEach(async to => {
+    const auth = useAuth(store);
+    const user = await auth.ensureSession();
+
+    if (to.meta.requiresAuth && !user) {
+      return { path: "/login", query: { redirect: to.fullPath } };
+    }
+
+    if (to.meta.guestOnly && user) {
+      return "/dashboard";
+    }
+
+    return true;
   });
 
   return Router;

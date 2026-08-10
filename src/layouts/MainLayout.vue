@@ -1,94 +1,162 @@
 <template>
-  <q-layout view="lHh Lpr lFf">
-    <q-header elevated>
+  <q-layout view="lHh lpR fFf">
+    <q-header reveal elevated class="bg-primary q-pa-md text-white">
       <q-toolbar>
-        <q-btn
-          flat
-          dense
-          round
-          icon="menu"
-          aria-label="Menu"
-          @click="toggleLeftDrawer"
-        />
+        <q-toolbar-title>
+          <AppBrand />
+        </q-toolbar-title>
 
-        <q-toolbar-title> Quasar App </q-toolbar-title>
-
-        <div>Quasar v{{ $q.version }}</div>
+        <div class="auth-actions row items-center no-wrap">
+          <q-btn
+            v-if="accessMode === 'login'"
+            flat
+            no-caps
+            rounded
+            class="auth-button auth-button--login"
+            label="Entrar"
+            to="/login"
+          />
+          <q-btn
+            v-if="accessMode === 'registration'"
+            unelevated
+            no-caps
+            rounded
+            class="auth-button auth-button--register"
+            label="Criar conta"
+            to="/cadastro"
+          />
+        </div>
       </q-toolbar>
     </q-header>
 
-    <q-drawer v-model="leftDrawerOpen" show-if-above bordered>
-      <q-list>
-        <q-item-label header> Essential Links </q-item-label>
-
-        <EssentialLink
-          v-for="link in linksList"
-          :key="link.label"
-          v-bind="link"
-        />
-      </q-list>
-    </q-drawer>
-
-    <q-page-container>
+    <q-page-container v-if="accessMode !== 'loading'">
       <router-view />
     </q-page-container>
   </q-layout>
 </template>
 
-<script setup lang="ts">
-import { ref } from "vue";
-import EssentialLink, {
-  type EssentialLinkProps
-} from "@/components/EssentialLink.vue";
+<script lang="ts" setup>
+import AppBrand from "@/components/AppBrand.vue";
+import { useCompany } from "@/composables/useCompany";
+import { onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 
-const linksList: EssentialLinkProps[] = [
-  {
-    label: "Docs",
-    caption: "quasar.dev",
-    icon: "school",
-    link: "https://quasar.dev"
-  },
-  {
-    label: "GitHub",
-    caption: "github.com/quasarframework",
-    icon: "code",
-    link: "https://github.com/quasarframework"
-  },
-  {
-    label: "Discord Chat Channel",
-    caption: "chat.quasar.dev",
-    icon: "chat",
-    link: "https://chat.quasar.dev"
-  },
-  {
-    label: "Forum",
-    caption: "forum.quasar.dev",
-    icon: "record_voice_over",
-    link: "https://forum.quasar.dev"
-  },
-  {
-    label: "Twitter",
-    caption: "@quasarframework",
-    icon: "rss_feed",
-    link: "https://twitter.quasar.dev"
-  },
-  {
-    label: "Facebook",
-    caption: "@QuasarFramework",
-    icon: "public",
-    link: "https://facebook.quasar.dev"
-  },
-  {
-    label: "Quasar Awesome",
-    caption: "Community Quasar projects",
-    icon: "favorite",
-    link: "https://awesome.quasar.dev"
+const ROOT_DOMAIN = "jcagenda.com.br";
+
+const company = useCompany();
+const router = useRouter();
+const accessMode = ref<"loading" | "login" | "registration">("loading");
+
+function getCompanySlug(hostname: string) {
+  const normalizedHostname = hostname.toLowerCase().replace(/\.$/, "");
+
+  if (
+    normalizedHostname === ROOT_DOMAIN ||
+    normalizedHostname === `www.${ROOT_DOMAIN}` ||
+    normalizedHostname === "localhost" ||
+    normalizedHostname === "127.0.0.1"
+  ) {
+    return null;
   }
-];
 
-const leftDrawerOpen = ref(false);
+  const productionSuffix = `.${ROOT_DOMAIN}`;
+  if (normalizedHostname.endsWith(productionSuffix)) {
+    const slug = normalizedHostname.slice(0, -productionSuffix.length);
+    return slug && !slug.includes(".") ? slug : null;
+  }
 
-function toggleLeftDrawer() {
-  leftDrawerOpen.value = !leftDrawerOpen.value;
+  const localhostSuffix = ".localhost";
+  if (normalizedHostname.endsWith(localhostSuffix)) {
+    const slug = normalizedHostname.slice(0, -localhostSuffix.length);
+    return slug && !slug.includes(".") ? slug : null;
+  }
+
+  return null;
 }
+
+function getMainDomainRegistrationUrl() {
+  const url = new URL(window.location.href);
+
+  if (
+    url.hostname === "localhost" ||
+    url.hostname === "127.0.0.1" ||
+    url.hostname.endsWith(".localhost")
+  ) {
+    url.hostname = "localhost";
+  } else {
+    url.hostname = ROOT_DOMAIN;
+    url.port = "";
+  }
+
+  url.pathname = "/cadastro";
+  url.search = "";
+  url.hash = "";
+
+  return url.toString();
+}
+
+onMounted(async () => {
+  const slug = getCompanySlug(window.location.hostname);
+
+  if (!slug) {
+    accessMode.value = "registration";
+
+    if (router.currentRoute.value.path === "/login") {
+      await router.replace("/cadastro");
+    }
+
+    return;
+  }
+
+  try {
+    await company.resolveCompany(slug);
+    accessMode.value = "login";
+
+    if (router.currentRoute.value.path === "/cadastro") {
+      await router.replace("/login");
+    }
+  } catch {
+    window.location.replace(getMainDomainRegistrationUrl());
+  }
+});
 </script>
+
+<style scoped>
+.auth-button {
+  min-height: 40px;
+  padding-inline: 18px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.auth-button--login {
+  color: rgb(255 255 255 / 88%);
+}
+
+.auth-button--login:hover {
+  color: #fff;
+  background: rgb(255 255 255 / 10%);
+}
+
+.auth-button--register {
+  color: var(--q-primary);
+  background: #fff;
+  box-shadow: 0 4px 12px rgb(9 39 87 / 18%);
+}
+
+.auth-button--register:hover {
+  background: #f7f9ff;
+  box-shadow: 0 6px 16px rgb(9 39 87 / 24%);
+}
+
+@media (max-width: 480px) {
+  .auth-actions {
+    gap: 4px;
+  }
+
+  .auth-button {
+    min-height: 38px;
+    padding-inline: 13px;
+  }
+}
+</style>

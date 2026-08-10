@@ -68,12 +68,30 @@ export default defineConfig((/* ctx */) => {
     devServer: {
       // vueDevtools: true,
       // https: true,
-      open: true // opens browser window automatically
+      open: true, // opens browser window automatically
+      proxy: {
+        "/api": {
+          target: "https://api-jcagenda.jcdev.com.br",
+          changeOrigin: true,
+          rewrite: path => path.replace(/^\/api/, "")
+        }
+      }
     },
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#framework
     framework: {
-      config: {},
+      config: {
+        brand: {
+          primary: "#5B2A6E",
+          secondary: "#B56576",
+          accent: "#D6B36A",
+          dark: "#221827",
+          positive: "#2E8B6D",
+          negative: "#C14953",
+          info: "#4A7EA8",
+          warning: "#E3A745"
+        }
+      },
 
       // iconSet: 'material-icons', // Quasar icon set
       // lang: 'en-US', // Quasar language pack
