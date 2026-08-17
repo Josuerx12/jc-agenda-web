@@ -1,7 +1,11 @@
 import axios from "axios";
 
 export const api = axios.create({
-  baseURL: import.meta.env.DEV ? "/api" : "https://api-jcagenda.jcdev.com.br"
+  baseURL: import.meta.env.DEV ? "/api" : import.meta.env.API_URL,
+  headers: {
+    "Content-Type": "application/json",
+    "x-api-key": import.meta.env.API_KEY
+  },
 });
 
 export function setApiCompanyId(companyId: string | null) {

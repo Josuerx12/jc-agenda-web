@@ -71,7 +71,7 @@ export default defineConfig((/* ctx */) => {
       open: true, // opens browser window automatically
       proxy: {
         "/api": {
-          target: "https://api-jcagenda.jcdev.com.br",
+          target: import.meta.env.API_URL || "http://localhost:3000",
           changeOrigin: true,
           rewrite: path => path.replace(/^\/api/, "")
         }

@@ -109,6 +109,7 @@
               color="primary"
               label="Esqueci minha senha"
               class="forgot-password"
+              to="/recuperar-senha"
             />
           </div>
 
